@@ -1,0 +1,31 @@
+<?php
+
+declare(strict_types=1);
+
+use App\Logging\CreateKafkaLogger;
+use Monolog\Level;
+
+return [
+    'default' => env('LOG_CHANNEL', 'kafka'),
+
+    'channels' => [
+        // Structured JSON logs shipped to Kafka via the shared logging package.
+        'kafka' => [
+            'driver' => 'custom',
+            'via' => CreateKafkaLogger::class,
+            'level' => env('LOG_LEVEL', 'debug'),
+        ],
+
+        // Plain stdout fallback for environments without Kafka.
+        'stdout' => [
+            'driver' => 'monolog',
+            'handler' => Monolog\Handler\StreamHandler::class,
+            'with' => ['stream' => 'php://stdout'],
+            'level' => env('LOG_LEVEL', 'debug'),
+        ],
+    ],
+
+    'deprecations' => ['channel' => 'stdout', 'trace' => false],
+
+    'level_class' => Level::class,
+];
