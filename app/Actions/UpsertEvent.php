@@ -17,15 +17,28 @@ final readonly class UpsertEvent
     {
     }
 
+    private const FIELDS = ['name', 'description', 'type', 'artist', 'status', 'date', 'venue_id'];
+
     /**
      * @param array<string, mixed> $attributes
      */
     public function execute(array $attributes, ?Event $event = null): Event
     {
-        if ($event === null) {
-            $event = Event::query()->create($attributes);
-        } else {
-            $event->update($attributes);
+        $isNew = $event === null;
+        $event ??= new Event();
+
+        // Only keys present in the validated payload are assigned, preserving
+        // the partial-update semantics of the 'sometimes' rules (absent means
+        // untouched; an explicit null stays assignable).
+        foreach (self::FIELDS as $field) {
+            if (array_key_exists($field, $attributes)) {
+                $event->{$field} = $attributes[$field];
+            }
+        }
+
+        $event->save();
+
+        if (! $isNew) {
             $this->catalog->forget($event->id);
         }
 

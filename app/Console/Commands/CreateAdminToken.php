@@ -22,10 +22,15 @@ final class CreateAdminToken extends Command
     {
         $email = (string) $this->argument('email');
 
-        $user = User::query()->firstOrCreate(
-            ['email' => $email],
-            ['name' => (string) $this->option('name'), 'password' => Hash::make(Str::random(40))],
-        );
+        $user = User::query()->where('email', $email)->first();
+
+        if ($user === null) {
+            $user = new User();
+            $user->email = $email;
+            $user->name = (string) $this->option('name');
+            $user->password = Hash::make(Str::random(40));
+            $user->save();
+        }
 
         $token = $user->createToken('admin-cli', ['events:write'])->plainTextToken;
 

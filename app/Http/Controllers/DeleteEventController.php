@@ -8,6 +8,7 @@ use App\Actions\DeleteEvent;
 use App\Exceptions\EventHasLiveBookingsException;
 use App\Models\Event;
 use Illuminate\Http\JsonResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 final readonly class DeleteEventController
 {
@@ -22,9 +23,9 @@ final readonly class DeleteEventController
         } catch (EventHasLiveBookingsException) {
             return response()->json([
                 'message' => 'This event has live bookings (paid or refund pending) and cannot be deleted. Refund them first.',
-            ], 409);
+            ], Response::HTTP_CONFLICT);
         }
 
-        return response()->json(status: 204);
+        return response()->json(status: Response::HTTP_NO_CONTENT);
     }
 }

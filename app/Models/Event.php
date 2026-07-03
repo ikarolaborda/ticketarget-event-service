@@ -15,7 +15,6 @@ final class Event extends Model
     use HasFactory;
     use HasUuids;
 
-    protected $fillable = ['name', 'description', 'type', 'artist', 'status', 'date', 'venue_id'];
 
     protected function casts(): array
     {

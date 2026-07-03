@@ -9,6 +9,7 @@ use App\Models\Event;
 use App\Models\Ticket;
 use App\Services\EventCatalog;
 use Illuminate\Http\JsonResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 final readonly class StoreTicketsController
 {
@@ -18,17 +19,20 @@ final readonly class StoreTicketsController
 
     public function __invoke(StoreTicketsRequest $request, Event $event): JsonResponse
     {
-        $rows = array_map(static fn (array $t): array => [
-            'event_id' => $event->id,
-            'seat' => $t['seat'],
-            'price' => $t['price'],
-            'type' => $t['type'] ?? 'standard',
-            'status' => Ticket::STATUS_AVAILABLE,
-        ], $request->validated('tickets'));
+        $rows = $request->validated('tickets');
 
-        $event->tickets()->createMany($rows);
+        foreach ($rows as $row) {
+            $ticket = new Ticket();
+            $ticket->event_id = $event->id;
+            $ticket->seat = $row['seat'];
+            $ticket->price = $row['price'];
+            $ticket->type = $row['type'] ?? 'standard';
+            $ticket->status = Ticket::STATUS_AVAILABLE;
+            $ticket->save();
+        }
+
         $this->catalog->forget($event->id);
 
-        return response()->json(['created' => count($rows)], 201);
+        return response()->json(['created' => count($rows)], Response::HTTP_CREATED);
     }
 }

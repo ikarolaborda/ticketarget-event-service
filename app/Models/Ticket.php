@@ -18,7 +18,6 @@ final class Ticket extends Model
     public const string STATUS_UNAVAILABLE = 'unavailable';
     public const string STATUS_BOOKED = 'booked';
 
-    protected $fillable = ['event_id', 'seat', 'price', 'type', 'status'];
 
     protected function casts(): array
     {

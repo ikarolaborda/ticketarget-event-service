@@ -107,11 +107,13 @@ final class AdminAuthTest extends TestCase
 
     private function sanctumUser(): User
     {
-        return User::query()->create([
-            'name' => 'CLI Admin',
-            'email' => 'cli@example.com',
-            'password' => 'irrelevant',
-        ]);
+        $user = new User();
+        $user->name = 'CLI Admin';
+        $user->email = 'cli@example.com';
+        $user->password = 'irrelevant';
+        $user->save();
+
+        return $user;
     }
 
     private function jwt(bool $isAdmin, ?string $issuer = null, ?int $expiresAt = null): string

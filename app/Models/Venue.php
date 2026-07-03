@@ -14,7 +14,6 @@ final class Venue extends Model
     use HasFactory;
     use HasUuids;
 
-    protected $fillable = ['name', 'description', 'type', 'address', 'city', 'capacity', 'seat_map'];
 
     protected function casts(): array
     {

@@ -80,13 +80,7 @@ final class DeleteEventTest extends TestCase
     public function test_it_blocks_deletion_on_mixed_statuses_when_any_is_live(): void
     {
         [$event, $ticket] = $this->eventWithTicket();
-        $second = Ticket::query()->create([
-            'event_id' => $event->id,
-            'seat' => 'A02',
-            'price' => 100,
-            'type' => 'standard',
-            'status' => Ticket::STATUS_BOOKED,
-        ]);
+        $second = $this->makeTicket($event->id, 'A02');
 
         $this->booking($ticket, 'refunded');
         $this->booking($second, 'paid');
@@ -97,26 +91,34 @@ final class DeleteEventTest extends TestCase
     /** @return array{0: Event, 1: Ticket} */
     private function eventWithTicket(): array
     {
-        $venue = Venue::query()->create([
-            'name' => 'Arena', 'address' => 'Rua Dois, 2', 'city' => 'Olinda', 'capacity' => 500,
-        ]);
+        $venue = new Venue();
+        $venue->name = 'Arena';
+        $venue->address = 'Rua Dois, 2';
+        $venue->city = 'Olinda';
+        $venue->capacity = 500;
+        $venue->save();
 
-        $event = Event::query()->create([
-            'name' => 'Deletable Show',
-            'status' => 'published',
-            'date' => now()->addMonth(),
-            'venue_id' => $venue->id,
-        ]);
+        $event = new Event();
+        $event->name = 'Deletable Show';
+        $event->status = 'published';
+        $event->date = now()->addMonth();
+        $event->venue_id = $venue->id;
+        $event->save();
 
-        $ticket = Ticket::query()->create([
-            'event_id' => $event->id,
-            'seat' => 'A01',
-            'price' => 100,
-            'type' => 'standard',
-            'status' => Ticket::STATUS_BOOKED,
-        ]);
+        return [$event, $this->makeTicket($event->id, 'A01')];
+    }
 
-        return [$event, $ticket];
+    private function makeTicket(string $eventId, string $seat): Ticket
+    {
+        $ticket = new Ticket();
+        $ticket->event_id = $eventId;
+        $ticket->seat = $seat;
+        $ticket->price = 100;
+        $ticket->type = 'standard';
+        $ticket->status = Ticket::STATUS_BOOKED;
+        $ticket->save();
+
+        return $ticket;
     }
 
     private function booking(Ticket $ticket, string $status): void
@@ -132,11 +134,13 @@ final class DeleteEventTest extends TestCase
 
     private function deleteEvent(Event $event): \Illuminate\Testing\TestResponse
     {
-        $token = User::query()->create([
-            'name' => 'CLI Admin',
-            'email' => Str::uuid().'@example.com',
-            'password' => 'irrelevant',
-        ])->createToken('cli', ['events:write'])->plainTextToken;
+        $user = new User();
+        $user->name = 'CLI Admin';
+        $user->email = Str::uuid().'@example.com';
+        $user->password = 'irrelevant';
+        $user->save();
+
+        $token = $user->createToken('cli', ['events:write'])->plainTextToken;
 
         return $this->deleteJson('/events/'.$event->id, [], ['Authorization' => 'Bearer '.$token]);
     }

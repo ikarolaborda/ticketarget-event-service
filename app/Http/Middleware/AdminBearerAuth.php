@@ -30,18 +30,18 @@ final readonly class AdminBearerAuth
         $bearer = $request->bearerToken();
 
         if ($bearer === null || $bearer === '') {
-            return response()->json(['message' => 'Unauthenticated.'], 401);
+            return response()->json(['message' => 'Unauthenticated.'], Response::HTTP_UNAUTHORIZED);
         }
 
         if (count(explode('.', $bearer)) === 3) {
             $claims = $this->tokens->verify($bearer);
 
             if ($claims === null) {
-                return response()->json(['message' => 'Unauthenticated.'], 401);
+                return response()->json(['message' => 'Unauthenticated.'], Response::HTTP_UNAUTHORIZED);
             }
 
             if ($claims['is_admin'] !== true) {
-                return response()->json(['message' => 'Forbidden.'], 403);
+                return response()->json(['message' => 'Forbidden.'], Response::HTTP_FORBIDDEN);
             }
 
             return $next($request);
@@ -50,11 +50,11 @@ final readonly class AdminBearerAuth
         $user = Auth::guard('sanctum')->user();
 
         if ($user === null) {
-            return response()->json(['message' => 'Unauthenticated.'], 401);
+            return response()->json(['message' => 'Unauthenticated.'], Response::HTTP_UNAUTHORIZED);
         }
 
         if (! $user->tokenCan('events:write')) {
-            return response()->json(['message' => 'Forbidden.'], 403);
+            return response()->json(['message' => 'Forbidden.'], Response::HTTP_FORBIDDEN);
         }
 
         return $next($request);
