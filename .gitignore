@@ -5,3 +5,4 @@
 /bootstrap/cache/*.php
 .DS_Store
 /storage/framework/
+/.phpstan
