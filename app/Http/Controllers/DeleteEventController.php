@@ -12,9 +12,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 final readonly class DeleteEventController
 {
-    public function __construct(private DeleteEvent $deleteEvent)
-    {
-    }
+    public function __construct(private DeleteEvent $deleteEvent) {}
 
     public function __invoke(Event $event): JsonResponse
     {

@@ -12,9 +12,7 @@ use Illuminate\Http\JsonResponse;
 
 final readonly class UpdateEventController
 {
-    public function __construct(private UpsertEvent $upsertEvent)
-    {
-    }
+    public function __construct(private UpsertEvent $upsertEvent) {}
 
     public function __invoke(UpdateEventRequest $request, Event $event): JsonResponse
     {

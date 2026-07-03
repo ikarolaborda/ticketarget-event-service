@@ -15,7 +15,6 @@ final class Event extends Model
     use HasFactory;
     use HasUuids;
 
-
     protected function casts(): array
     {
         return ['date' => 'immutable_datetime'];

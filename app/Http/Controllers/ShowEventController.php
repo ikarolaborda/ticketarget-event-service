@@ -10,9 +10,7 @@ use Illuminate\Http\JsonResponse;
 
 final readonly class ShowEventController
 {
-    public function __construct(private EventCatalog $catalog)
-    {
-    }
+    public function __construct(private EventCatalog $catalog) {}
 
     public function __invoke(string $event): JsonResponse
     {

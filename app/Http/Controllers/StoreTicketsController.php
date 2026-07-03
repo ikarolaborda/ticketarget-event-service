@@ -13,16 +13,14 @@ use Symfony\Component\HttpFoundation\Response;
 
 final readonly class StoreTicketsController
 {
-    public function __construct(private EventCatalog $catalog)
-    {
-    }
+    public function __construct(private EventCatalog $catalog) {}
 
     public function __invoke(StoreTicketsRequest $request, Event $event): JsonResponse
     {
         $rows = $request->validated('tickets');
 
         foreach ($rows as $row) {
-            $ticket = new Ticket();
+            $ticket = new Ticket;
             $ticket->event_id = $event->id;
             $ticket->seat = $row['seat'];
             $ticket->price = $row['price'];

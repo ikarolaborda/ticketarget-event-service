@@ -11,9 +11,7 @@ use Illuminate\Http\JsonResponse;
 
 final readonly class StoreEventController
 {
-    public function __construct(private UpsertEvent $upsertEvent)
-    {
-    }
+    public function __construct(private UpsertEvent $upsertEvent) {}
 
     public function __invoke(StoreEventRequest $request): JsonResponse
     {

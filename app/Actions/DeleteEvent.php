@@ -11,14 +11,12 @@ use Illuminate\Support\Facades\DB;
 
 final readonly class DeleteEvent
 {
-    public function __construct(private EventCatalog $catalog)
-    {
-    }
+    public function __construct(private EventCatalog $catalog) {}
 
     public function execute(Event $event): void
     {
         if ($this->hasLiveBookings($event)) {
-            throw new EventHasLiveBookingsException();
+            throw new EventHasLiveBookingsException;
         }
 
         $id = $event->id;

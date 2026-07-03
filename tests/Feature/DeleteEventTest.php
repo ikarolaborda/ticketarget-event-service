@@ -10,8 +10,10 @@ use App\Models\User;
 use App\Models\Venue;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 final class DeleteEventTest extends TestCase
@@ -91,14 +93,14 @@ final class DeleteEventTest extends TestCase
     /** @return array{0: Event, 1: Ticket} */
     private function eventWithTicket(): array
     {
-        $venue = new Venue();
+        $venue = new Venue;
         $venue->name = 'Arena';
         $venue->address = 'Rua Dois, 2';
         $venue->city = 'Olinda';
         $venue->capacity = 500;
         $venue->save();
 
-        $event = new Event();
+        $event = new Event;
         $event->name = 'Deletable Show';
         $event->status = 'published';
         $event->date = now()->addMonth();
@@ -110,7 +112,7 @@ final class DeleteEventTest extends TestCase
 
     private function makeTicket(string $eventId, string $seat): Ticket
     {
-        $ticket = new Ticket();
+        $ticket = new Ticket;
         $ticket->event_id = $eventId;
         $ticket->seat = $seat;
         $ticket->price = 100;
@@ -123,7 +125,7 @@ final class DeleteEventTest extends TestCase
 
     private function booking(Ticket $ticket, string $status): void
     {
-        \Illuminate\Support\Facades\DB::table('bookings')->insert([
+        DB::table('bookings')->insert([
             'id' => (string) Str::uuid(),
             'ticket_id' => $ticket->id,
             'status' => $status,
@@ -132,9 +134,9 @@ final class DeleteEventTest extends TestCase
         ]);
     }
 
-    private function deleteEvent(Event $event): \Illuminate\Testing\TestResponse
+    private function deleteEvent(Event $event): TestResponse
     {
-        $user = new User();
+        $user = new User;
         $user->name = 'CLI Admin';
         $user->email = Str::uuid().'@example.com';
         $user->password = 'irrelevant';

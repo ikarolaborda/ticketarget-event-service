@@ -11,9 +11,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 final readonly class ListEventsController
 {
-    public function __construct(private EventCatalog $catalog)
-    {
-    }
+    public function __construct(private EventCatalog $catalog) {}
 
     public function __invoke(Request $request): AnonymousResourceCollection
     {

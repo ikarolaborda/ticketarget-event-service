@@ -6,6 +6,4 @@ namespace App\Exceptions;
 
 use RuntimeException;
 
-final class EventHasLiveBookingsException extends RuntimeException
-{
-}
+final class EventHasLiveBookingsException extends RuntimeException {}

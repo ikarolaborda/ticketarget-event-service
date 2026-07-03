@@ -16,7 +16,7 @@ final class StoreVenueController
     {
         $validated = $request->validated();
 
-        $venue = new Venue();
+        $venue = new Venue;
         $venue->name = $validated['name'];
         $venue->description = $validated['description'] ?? null;
         $venue->type = $validated['type'] ?? null;

@@ -13,19 +13,17 @@ use App\Services\EventCatalog;
  */
 final readonly class UpsertEvent
 {
-    public function __construct(private EventCatalog $catalog)
-    {
-    }
+    public function __construct(private EventCatalog $catalog) {}
 
     private const FIELDS = ['name', 'description', 'type', 'artist', 'status', 'date', 'venue_id'];
 
     /**
-     * @param array<string, mixed> $attributes
+     * @param  array<string, mixed>  $attributes
      */
     public function execute(array $attributes, ?Event $event = null): Event
     {
         $isNew = $event === null;
-        $event ??= new Event();
+        $event ??= new Event;
 
         // Only keys present in the validated payload are assigned, preserving
         // the partial-update semantics of the 'sometimes' rules (absent means

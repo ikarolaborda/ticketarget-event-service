@@ -14,7 +14,6 @@ final class Venue extends Model
     use HasFactory;
     use HasUuids;
 
-
     protected function casts(): array
     {
         return ['seat_map' => 'array', 'capacity' => 'integer'];

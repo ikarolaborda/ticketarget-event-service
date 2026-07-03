@@ -16,6 +16,7 @@ use Illuminate\Support\Str;
 final class CreateAdminToken extends Command
 {
     protected $signature = 'admin:token {email=admin@ticketarget.local} {--name=admin}';
+
     protected $description = 'Create (or reuse) an admin user and issue an events:write API token';
 
     public function handle(): int
@@ -25,7 +26,7 @@ final class CreateAdminToken extends Command
         $user = User::query()->where('email', $email)->first();
 
         if ($user === null) {
-            $user = new User();
+            $user = new User;
             $user->email = $email;
             $user->name = (string) $this->option('name');
             $user->password = Hash::make(Str::random(40));

@@ -16,9 +16,7 @@ final readonly class EventCatalog
 {
     private const int TTL = 60;
 
-    public function __construct(private Cache $cache)
-    {
-    }
+    public function __construct(private Cache $cache) {}
 
     public function find(string $eventId): ?Event
     {

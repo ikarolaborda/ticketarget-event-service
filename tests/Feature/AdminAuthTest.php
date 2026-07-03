@@ -107,7 +107,7 @@ final class AdminAuthTest extends TestCase
 
     private function sanctumUser(): User
     {
-        $user = new User();
+        $user = new User;
         $user->name = 'CLI Admin';
         $user->email = 'cli@example.com';
         $user->password = 'irrelevant';
