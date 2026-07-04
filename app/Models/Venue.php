@@ -23,4 +23,12 @@ final class Venue extends Model
     {
         return $this->hasMany(Event::class);
     }
+
+    /**
+     * @return HasMany<VenueZone, $this>
+     */
+    public function zones(): HasMany
+    {
+        return $this->hasMany(VenueZone::class);
+    }
 }
