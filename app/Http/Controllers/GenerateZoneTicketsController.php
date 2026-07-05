@@ -9,6 +9,7 @@ use App\Models\Event;
 use App\Models\Ticket;
 use App\Models\VenueZone;
 use App\Services\EventCatalog;
+use App\Services\OutboxWriter;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -16,7 +17,10 @@ use Symfony\Component\HttpFoundation\Response;
 
 final readonly class GenerateZoneTicketsController
 {
-    public function __construct(private EventCatalog $catalog) {}
+    public function __construct(
+        private EventCatalog $catalog,
+        private OutboxWriter $outbox,
+    ) {}
 
     public function __invoke(GenerateZoneTicketsRequest $request, Event $event, VenueZone $zone): JsonResponse
     {
@@ -72,7 +76,7 @@ final readonly class GenerateZoneTicketsController
     private function generate(Event $event, VenueZone $zone, float $price, string $type): int
     {
         return DB::transaction(function () use ($event, $zone, $price, $type): int {
-            $count = 0;
+            $created = [];
 
             foreach ($this->seatLabels($zone) as $seat) {
                 $ticket = new Ticket;
@@ -83,10 +87,25 @@ final readonly class GenerateZoneTicketsController
                 $ticket->type = $type;
                 $ticket->status = Ticket::STATUS_AVAILABLE;
                 $ticket->save();
-                $count++;
+
+                $created[] = [
+                    'id' => $ticket->id,
+                    'seat' => $ticket->seat,
+                    'price' => $ticket->price,
+                    'type' => $ticket->type,
+                ];
             }
 
-            return $count;
+            // Zone generation is generate-once per (event, zone), so the zone
+            // id is a natural idempotency key for the integration event.
+            $this->outbox->write('event', $event->id, 'ticket.generated', 'ticket.generated:zone:'.$zone->id, [
+                'event_id' => $event->id,
+                'zone_id' => $zone->id,
+                'count' => count($created),
+                'tickets' => $created,
+            ]);
+
+            return count($created);
         });
     }
 
