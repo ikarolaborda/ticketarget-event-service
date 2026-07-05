@@ -11,6 +11,15 @@ use Laravel\Sanctum\HasApiTokens;
 /**
  * Administrative principal for catalog write operations. Authentication is via
  * Sanctum personal access tokens scoped with abilities (e.g. `events:write`).
+ *
+ * The identity schema is owned by the Users service; the properties are
+ * documented here because this service no longer carries those migrations.
+ *
+ * @property string $id
+ * @property string $name
+ * @property string $email
+ * @property string $password
+ * @property bool $is_admin
  */
 final class User extends Authenticatable
 {

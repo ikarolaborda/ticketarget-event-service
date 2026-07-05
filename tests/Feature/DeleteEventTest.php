@@ -18,6 +18,7 @@ use Tests\TestCase;
 
 final class DeleteEventTest extends TestCase
 {
+    use CreatesIdentityTables;
     use RefreshDatabase;
 
     protected function beforeRefreshingDatabase(): void
@@ -30,6 +31,8 @@ final class DeleteEventTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        $this->createIdentityTables();
 
         // Booking-service owns this table in the shared database; recreate the
         // slice the delete guard queries.

@@ -10,6 +10,7 @@ use Tests\TestCase;
 
 final class AdminAuthTest extends TestCase
 {
+    use CreatesIdentityTables;
     use RefreshDatabase;
 
     private const string SECRET = 'test-auth-secret';
@@ -26,6 +27,8 @@ final class AdminAuthTest extends TestCase
         parent::setUp();
 
         config(['auth_token.secret' => self::SECRET, 'auth_token.issuer' => 'ticketarget-users']);
+
+        $this->createIdentityTables();
     }
 
     public function test_it_rejects_requests_without_a_bearer_token(): void
