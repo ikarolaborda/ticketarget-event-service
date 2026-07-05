@@ -10,10 +10,11 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Same transactional-outbox shape as the Booking service: rows are
-        // written inside the mutating transaction and shipped by
-        // outbox:publish; event_key dedupes retried application paths.
-        Schema::create('outbox_messages', function (Blueprint $table): void {
+        // Same transactional-outbox shape as the Booking service, but under a
+        // context-prefixed name: the shadow-period shared database already has
+        // booking's outbox_messages, and one shared table would let either
+        // publisher ship the other context's events to the wrong topic.
+        Schema::create('catalog_outbox_messages', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->string('aggregate_type');
             $table->uuid('aggregate_id');
@@ -29,6 +30,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('outbox_messages');
+        Schema::dropIfExists('catalog_outbox_messages');
     }
 };

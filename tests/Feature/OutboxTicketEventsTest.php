@@ -44,9 +44,9 @@ final class OutboxTicketEventsTest extends TestCase
             ],
         ], $this->adminHeaders())->assertCreated();
 
-        $this->assertSame(1, DB::table('outbox_messages')->count());
+        $this->assertSame(1, DB::table('catalog_outbox_messages')->count());
 
-        $row = DB::table('outbox_messages')->sole();
+        $row = DB::table('catalog_outbox_messages')->sole();
         $payload = json_decode((string) $row->payload, true);
 
         $this->assertSame('ticket.generated', $row->event_type);
@@ -69,7 +69,7 @@ final class OutboxTicketEventsTest extends TestCase
         ], $headers)->assertCreated();
 
         // Same request id -> same event_key -> one outbox row (retry dedupe).
-        $this->assertSame(1, DB::table('outbox_messages')->count());
+        $this->assertSame(1, DB::table('catalog_outbox_messages')->count());
     }
 
     public function test_zone_generation_enqueues_one_event_keyed_by_zone(): void
@@ -88,7 +88,7 @@ final class OutboxTicketEventsTest extends TestCase
             'price' => 80,
         ], $this->adminHeaders())->assertCreated();
 
-        $row = DB::table('outbox_messages')->sole();
+        $row = DB::table('catalog_outbox_messages')->sole();
         $payload = json_decode((string) $row->payload, true);
 
         $this->assertSame('ticket.generated:zone:'.$zoneId, $row->event_key);

@@ -21,7 +21,7 @@ final readonly class OutboxWriter
     {
         // insertOrIgnore + unique event_key: a retried application path
         // enqueues the same semantic event at most once.
-        DB::table('outbox_messages')->insertOrIgnore([
+        DB::table('catalog_outbox_messages')->insertOrIgnore([
             'id' => (string) Str::uuid(),
             'aggregate_type' => $aggregateType,
             'aggregate_id' => $aggregateId,
