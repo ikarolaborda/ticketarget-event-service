@@ -32,11 +32,14 @@ final class BackfillEventDirectory extends Command
             foreach ($events as $event) {
                 $occurredAt = ($event->updated_at ?? now())->format('Y-m-d\TH:i:s.uP');
 
+                // The schema version is part of the key so a payload-shape
+                // upgrade re-emits every event once; same-shape re-runs still
+                // dedupe. Consumers treat replays as no-ops (equal occurred_at).
                 $outbox->write(
                     'event',
                     $event->id,
                     'event.updated',
-                    'event.updated:backfill:'.$event->id.':'.$occurredAt,
+                    'event.updated:backfill:v'.EventSearchPayload::SCHEMA_VERSION.':'.$event->id.':'.$occurredAt,
                     $searchPayload->build($event, $occurredAt),
                 );
 
