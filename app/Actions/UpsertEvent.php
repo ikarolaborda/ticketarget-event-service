@@ -6,16 +6,22 @@ namespace App\Actions;
 
 use App\Models\Event;
 use App\Services\EventCatalog;
+use App\Services\EventSearchPayload;
 use App\Services\OutboxWriter;
 use Illuminate\Support\Facades\DB;
 
 /**
  * Creates or updates an event and invalidates its cached read projection so the
- * next read reflects the write immediately (the search index follows via CDC).
+ * next read reflects the write immediately (the search index follows the
+ * emitted integration event).
  */
 final readonly class UpsertEvent
 {
-    public function __construct(private EventCatalog $catalog, private OutboxWriter $outbox) {}
+    public function __construct(
+        private EventCatalog $catalog,
+        private OutboxWriter $outbox,
+        private EventSearchPayload $searchPayload,
+    ) {}
 
     private const FIELDS = ['name', 'description', 'type', 'artist', 'status', 'date', 'venue_id'];
 
@@ -50,12 +56,7 @@ final readonly class UpsertEvent
                 $event->id,
                 $isNew ? 'event.created' : 'event.updated',
                 $isNew ? 'event.created:'.$event->id : 'event.updated:'.$event->id.':'.$occurredAt,
-                [
-                    'event_id' => $event->id,
-                    'name' => $event->name,
-                    'date' => $event->date?->toIso8601String(),
-                    'occurred_at' => $occurredAt,
-                ],
+                $this->searchPayload->build($event, $occurredAt),
             );
         });
 

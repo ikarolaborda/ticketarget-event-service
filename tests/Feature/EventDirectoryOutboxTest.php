@@ -54,6 +54,13 @@ final class EventDirectoryOutboxTest extends TestCase
         $this->assertNotNull($payload['date']);
         // Emission-time microseconds, not the second-precision updated_at.
         $this->assertMatchesRegularExpression('/\.\d{6}/', $payload['occurred_at']);
+        // Event-carried state for the search index: the worker builds its
+        // document from the payload alone.
+        $this->assertSame(2, $payload['schema_version']);
+        $this->assertSame('published', $payload['status']);
+        $this->assertSame('Directory Hall', $payload['venue_name']);
+        $this->assertSame('Recife', $payload['venue_city']);
+        $this->assertNull($payload['min_price']);
     }
 
     public function test_updating_an_event_enqueues_event_updated(): void
@@ -82,6 +89,12 @@ final class EventDirectoryOutboxTest extends TestCase
         $this->artisan('catalog:backfill-event-directory')->assertSuccessful();
 
         $this->assertSame(2, DB::table('catalog_outbox_messages')->where('event_type', 'event.updated')->count());
+
+        // Backfill emissions carry the same event-carried state as live ones,
+        // so a full run rebuilds every search document.
+        $payload = json_decode((string) DB::table('catalog_outbox_messages')->where('event_type', 'event.updated')->first()->payload, true);
+        $this->assertSame(2, $payload['schema_version']);
+        $this->assertSame('Directory Hall', $payload['venue_name']);
 
         // Deterministic keys: a re-run enqueues nothing new.
         $this->artisan('catalog:backfill-event-directory')->assertSuccessful();

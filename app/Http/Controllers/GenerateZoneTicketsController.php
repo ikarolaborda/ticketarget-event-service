@@ -9,6 +9,7 @@ use App\Models\Event;
 use App\Models\Ticket;
 use App\Models\VenueZone;
 use App\Services\EventCatalog;
+use App\Services\EventSearchPayload;
 use App\Services\OutboxWriter;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
@@ -20,6 +21,7 @@ final readonly class GenerateZoneTicketsController
     public function __construct(
         private EventCatalog $catalog,
         private OutboxWriter $outbox,
+        private EventSearchPayload $searchPayload,
     ) {}
 
     public function __invoke(GenerateZoneTicketsRequest $request, Event $event, VenueZone $zone): JsonResponse
@@ -104,6 +106,18 @@ final readonly class GenerateZoneTicketsController
                 'count' => count($created),
                 'tickets' => $created,
             ]);
+
+            // New tickets can change min_price; re-emit the event state inside
+            // the same transaction so the search payload sees the fresh rows.
+            $occurredAt = now()->format('Y-m-d\TH:i:s.uP');
+
+            $this->outbox->write(
+                'event',
+                $event->id,
+                'event.updated',
+                'event.updated:'.$event->id.':'.$occurredAt,
+                $this->searchPayload->build($event, $occurredAt),
+            );
 
             return count($created);
         });

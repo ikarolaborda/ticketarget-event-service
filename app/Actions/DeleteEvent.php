@@ -7,11 +7,13 @@ namespace App\Actions;
 use App\Exceptions\EventHasLiveBookingsException;
 use App\Models\Event;
 use App\Services\EventCatalog;
+use App\Services\EventSearchPayload;
+use App\Services\OutboxWriter;
 use Illuminate\Support\Facades\DB;
 
 final readonly class DeleteEvent
 {
-    public function __construct(private EventCatalog $catalog) {}
+    public function __construct(private EventCatalog $catalog, private OutboxWriter $outbox) {}
 
     public function execute(Event $event): void
     {
@@ -20,7 +22,22 @@ final readonly class DeleteEvent
         }
 
         $id = $event->id;
-        $event->delete();
+
+        DB::transaction(function () use ($event, $id): void {
+            $event->delete();
+
+            // The search index must drop the document; the booking event
+            // directory deliberately ignores this type (purchase-time snapshot
+            // semantics keep last-known name/date).
+            $occurredAt = now()->format('Y-m-d\TH:i:s.uP');
+
+            $this->outbox->write('event', $id, 'event.deleted', 'event.deleted:'.$id, [
+                'event_id' => $id,
+                'schema_version' => EventSearchPayload::SCHEMA_VERSION,
+                'occurred_at' => $occurredAt,
+            ]);
+        });
+
         $this->catalog->forget($id);
     }
 

@@ -52,6 +52,16 @@ final class DeleteEventTest extends TestCase
 
         $this->deleteEvent($event)->assertStatus(204);
         $this->assertDatabaseMissing('events', ['id' => $event->id]);
+
+        // The search index must drop the document; the emission is
+        // transactional with the delete itself.
+        $row = DB::table('catalog_outbox_messages')->where('event_type', 'event.deleted')->sole();
+        $payload = json_decode((string) $row->payload, true);
+
+        $this->assertSame('event.deleted:'.$event->id, $row->event_key);
+        $this->assertSame($event->id, $payload['event_id']);
+        $this->assertSame(2, $payload['schema_version']);
+        $this->assertMatchesRegularExpression('/\.\d{6}/', $payload['occurred_at']);
     }
 
     public function test_it_deletes_an_event_whose_bookings_are_all_refunded(): void
@@ -71,6 +81,7 @@ final class DeleteEventTest extends TestCase
         $this->deleteEvent($event)->assertStatus(409);
         $this->assertDatabaseHas('events', ['id' => $event->id]);
         $this->assertDatabaseHas('tickets', ['id' => $ticket->id]);
+        $this->assertSame(0, DB::table('catalog_outbox_messages')->where('event_type', 'event.deleted')->count());
     }
 
     public function test_it_blocks_deletion_when_a_refund_is_pending(): void
