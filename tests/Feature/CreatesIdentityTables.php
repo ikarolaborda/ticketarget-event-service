@@ -9,8 +9,9 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * The Users service owns the identity schema (shared data plane), so suites
- * that seed admin users create the minimal tables themselves — the same
- * pattern used for the bookings table owned by the Booking service.
+ * that reference it create the minimal table themselves — the same pattern
+ * used for the bookings table owned by the Booking service. Auth itself is
+ * now stateless (RS256/JWKS), so no personal-access-token table is needed.
  */
 trait CreatesIdentityTables
 {
@@ -24,19 +25,6 @@ trait CreatesIdentityTables
                 $table->string('password');
                 $table->rememberToken();
                 $table->boolean('is_admin')->default(false);
-                $table->timestamps();
-            });
-        }
-
-        if (! Schema::hasTable('personal_access_tokens')) {
-            Schema::create('personal_access_tokens', function (Blueprint $table): void {
-                $table->id();
-                $table->uuidMorphs('tokenable');
-                $table->string('name');
-                $table->string('token', 64)->unique();
-                $table->text('abilities')->nullable();
-                $table->timestamp('last_used_at')->nullable();
-                $table->timestamp('expires_at')->nullable();
                 $table->timestamps();
             });
         }

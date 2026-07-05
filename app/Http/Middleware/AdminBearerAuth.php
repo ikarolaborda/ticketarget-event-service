@@ -7,17 +7,14 @@ namespace App\Http\Middleware;
 use App\Services\AuthTokenVerifier;
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Guards catalog administration with dual acceptance: a platform JWT carrying
- * the is_admin claim (humans in the browser) OR a Sanctum personal access
- * token with the events:write ability (CLI and service callers).
- *
- * Precedence contract: a JWT-shaped bearer (three dot-separated segments)
- * that fails verification is rejected outright — it never falls through to
- * Sanctum, so a forged JWT can't be retried as a personal access token.
+ * Guards catalog administration. Since the Users service became the sole
+ * token issuer (RS256), this accepts exactly one credential: a platform JWT
+ * carrying is_admin. CLI and service callers mint one with the Users service's
+ * `auth:issue-token` command — the old Sanctum personal-access-token path (and
+ * its cross-context read of the users table) is gone.
  */
 final readonly class AdminBearerAuth
 {
@@ -25,33 +22,19 @@ final readonly class AdminBearerAuth
 
     public function handle(Request $request, Closure $next): Response
     {
-        $bearer = $request->bearerToken();
+        $bearer = (string) $request->bearerToken();
 
-        if ($bearer === null || $bearer === '') {
+        if ($bearer === '') {
             return response()->json(['message' => 'Unauthenticated.'], Response::HTTP_UNAUTHORIZED);
         }
 
-        if (count(explode('.', $bearer)) === 3) {
-            $claims = $this->tokens->verify($bearer);
+        $claims = $this->tokens->verify($bearer);
 
-            if ($claims === null) {
-                return response()->json(['message' => 'Unauthenticated.'], Response::HTTP_UNAUTHORIZED);
-            }
-
-            if ($claims['is_admin'] !== true) {
-                return response()->json(['message' => 'Forbidden.'], Response::HTTP_FORBIDDEN);
-            }
-
-            return $next($request);
-        }
-
-        $user = Auth::guard('sanctum')->user();
-
-        if ($user === null) {
+        if ($claims === null) {
             return response()->json(['message' => 'Unauthenticated.'], Response::HTTP_UNAUTHORIZED);
         }
 
-        if (! $user->tokenCan('events:write')) {
+        if ($claims['is_admin'] !== true) {
             return response()->json(['message' => 'Forbidden.'], Response::HTTP_FORBIDDEN);
         }
 

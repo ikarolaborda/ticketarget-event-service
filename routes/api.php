@@ -25,7 +25,7 @@ Route::get('/venues', ListVenuesController::class)->name('venues.index');
 Route::get('/venues/{venue}/zones', ListVenueZonesController::class)->name('venues.zones.index');
 Route::get('/events/{event}/zones', ListEventZonesController::class)->name('events.zones.index');
 
-// Catalog administration — platform JWT with is_admin OR Sanctum events:write.
+// Catalog administration — platform JWT with is_admin (sole issuer: users-service).
 Route::middleware(AdminBearerAuth::class)->group(function (): void {
     Route::post('/venues', StoreVenueController::class)->name('venues.store');
     Route::post('/events', StoreEventController::class)->name('events.store');

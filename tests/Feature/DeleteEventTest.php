@@ -6,7 +6,6 @@ namespace Tests\Feature;
 
 use App\Models\Event;
 use App\Models\Ticket;
-use App\Models\User;
 use App\Models\Venue;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -18,7 +17,7 @@ use Tests\TestCase;
 
 final class DeleteEventTest extends TestCase
 {
-    use CreatesIdentityTables;
+    use MintsAdminJwt;
     use RefreshDatabase;
 
     protected function beforeRefreshingDatabase(): void
@@ -32,7 +31,8 @@ final class DeleteEventTest extends TestCase
     {
         parent::setUp();
 
-        $this->createIdentityTables();
+        config(['auth_token.accept_hs256' => true]);
+        $this->bindAdminJwks();
 
         // Booking-service owns this table in the shared database; recreate the
         // slice the delete guard queries.
@@ -150,14 +150,6 @@ final class DeleteEventTest extends TestCase
 
     private function deleteEvent(Event $event): TestResponse
     {
-        $user = new User;
-        $user->name = 'CLI Admin';
-        $user->email = Str::uuid().'@example.com';
-        $user->password = 'irrelevant';
-        $user->save();
-
-        $token = $user->createToken('cli', ['events:write'])->plainTextToken;
-
-        return $this->deleteJson('/events/'.$event->id, [], ['Authorization' => 'Bearer '.$token]);
+        return $this->deleteJson('/events/'.$event->id, [], ['Authorization' => 'Bearer '.$this->adminJwt(isAdmin: true)]);
     }
 }

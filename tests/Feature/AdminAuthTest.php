@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 final class AdminAuthTest extends TestCase
 {
-    use CreatesIdentityTables;
+    use MintsAdminJwt;
     use RefreshDatabase;
 
     private const string SECRET = 'test-auth-secret';
@@ -26,9 +25,13 @@ final class AdminAuthTest extends TestCase
     {
         parent::setUp();
 
-        config(['auth_token.secret' => self::SECRET, 'auth_token.issuer' => 'ticketarget-users']);
+        config([
+            'auth_token.secret' => self::SECRET,
+            'auth_token.issuer' => 'ticketarget-users',
+            'auth_token.accept_hs256' => true,
+        ]);
 
-        $this->createIdentityTables();
+        $this->bindAdminJwks();
     }
 
     public function test_it_rejects_requests_without_a_bearer_token(): void
@@ -42,9 +45,9 @@ final class AdminAuthTest extends TestCase
             ->assertStatus(401);
     }
 
-    public function test_it_rejects_a_jwt_with_a_tampered_signature_without_falling_back_to_sanctum(): void
+    public function test_it_rejects_a_jwt_with_a_tampered_signature(): void
     {
-        $token = $this->jwt(isAdmin: true);
+        $token = $this->adminJwt(isAdmin: true);
         $forged = substr($token, 0, -4).'AAAA';
 
         $this->postJson('/venues', $this->venuePayload(), ['Authorization' => 'Bearer '.$forged])
@@ -53,13 +56,13 @@ final class AdminAuthTest extends TestCase
 
     public function test_it_rejects_a_valid_jwt_without_the_admin_flag(): void
     {
-        $this->postJson('/venues', $this->venuePayload(), ['Authorization' => 'Bearer '.$this->jwt(isAdmin: false)])
+        $this->postJson('/venues', $this->venuePayload(), ['Authorization' => 'Bearer '.$this->adminJwt(isAdmin: false)])
             ->assertStatus(403);
     }
 
     public function test_it_accepts_a_valid_admin_jwt(): void
     {
-        $this->postJson('/venues', $this->venuePayload(), ['Authorization' => 'Bearer '.$this->jwt(isAdmin: true)])
+        $this->postJson('/venues', $this->venuePayload(), ['Authorization' => 'Bearer '.$this->adminJwt(isAdmin: true)])
             ->assertStatus(201)
             ->assertJsonPath('data.name', 'JWT Venue');
 
@@ -68,7 +71,7 @@ final class AdminAuthTest extends TestCase
 
     public function test_it_rejects_an_admin_jwt_from_the_wrong_issuer(): void
     {
-        $token = $this->jwt(isAdmin: true, issuer: 'someone-else');
+        $token = $this->adminJwt(isAdmin: true, issuer: 'someone-else');
 
         $this->postJson('/venues', $this->venuePayload(), ['Authorization' => 'Bearer '.$token])
             ->assertStatus(401);
@@ -76,26 +79,32 @@ final class AdminAuthTest extends TestCase
 
     public function test_it_rejects_an_expired_admin_jwt(): void
     {
-        $token = $this->jwt(isAdmin: true, expiresAt: time() - 60);
+        $token = $this->adminJwt(isAdmin: true, expiresAt: time() - 60);
 
         $this->postJson('/venues', $this->venuePayload(), ['Authorization' => 'Bearer '.$token])
             ->assertStatus(401);
     }
 
-    public function test_it_still_accepts_a_sanctum_token_with_the_events_write_ability(): void
+    public function test_it_rejects_an_rs256_token_signed_by_an_unknown_kid(): void
     {
-        $token = $this->sanctumUser()->createToken('cli', ['events:write'])->plainTextToken;
+        $token = $this->adminJwt(isAdmin: true, kid: 'rotated-away');
 
         $this->postJson('/venues', $this->venuePayload(), ['Authorization' => 'Bearer '.$token])
+            ->assertStatus(401);
+    }
+
+    public function test_it_accepts_a_legacy_hs256_admin_token_while_the_flag_is_on(): void
+    {
+        $this->postJson('/venues', $this->venuePayload(), ['Authorization' => 'Bearer '.$this->legacyHs256Jwt(true, self::SECRET)])
             ->assertStatus(201);
     }
 
-    public function test_it_rejects_a_sanctum_token_without_the_events_write_ability(): void
+    public function test_it_rejects_a_legacy_hs256_admin_token_once_the_flag_is_off(): void
     {
-        $token = $this->sanctumUser()->createToken('cli', ['other:thing'])->plainTextToken;
+        config(['auth_token.accept_hs256' => false]);
 
-        $this->postJson('/venues', $this->venuePayload(), ['Authorization' => 'Bearer '.$token])
-            ->assertStatus(403);
+        $this->postJson('/venues', $this->venuePayload(), ['Authorization' => 'Bearer '.$this->legacyHs256Jwt(true, self::SECRET)])
+            ->assertStatus(401);
     }
 
     public function test_venues_listing_is_public(): void
@@ -106,34 +115,5 @@ final class AdminAuthTest extends TestCase
     private function venuePayload(): array
     {
         return ['name' => 'JWT Venue', 'address' => 'Rua Um, 1', 'city' => 'Recife', 'capacity' => 100];
-    }
-
-    private function sanctumUser(): User
-    {
-        $user = new User;
-        $user->name = 'CLI Admin';
-        $user->email = 'cli@example.com';
-        $user->password = 'irrelevant';
-        $user->save();
-
-        return $user;
-    }
-
-    private function jwt(bool $isAdmin, ?string $issuer = null, ?int $expiresAt = null): string
-    {
-        $encode = static fn (string $v): string => rtrim(strtr(base64_encode($v), '+/', '-_'), '=');
-
-        $header = $encode(json_encode(['alg' => 'HS256', 'typ' => 'JWT']));
-        $payload = $encode(json_encode([
-            'iss' => $issuer ?? 'ticketarget-users',
-            'sub' => '11111111-2222-3333-4444-555555555555',
-            'email' => 'admin@example.com',
-            'name' => 'Admin',
-            'is_admin' => $isAdmin,
-            'iat' => time(),
-            'exp' => $expiresAt ?? time() + 3600,
-        ]));
-
-        return $header.'.'.$payload.'.'.$encode(hash_hmac('sha256', $header.'.'.$payload, self::SECRET, true));
     }
 }

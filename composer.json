@@ -1,14 +1,13 @@
 {
     "name": "ticketarget/event-service",
     "type": "project",
-    "description": "Event catalog service (Laravel) — view & list events, source of truth for CDC.",
+    "description": "Event catalog service (Laravel) \u2014 view & list events, source of truth for CDC.",
     "license": "proprietary",
     "require": {
         "php": ">=8.5",
         "ext-pdo": "*",
         "ext-redis": "*",
         "laravel/framework": "^13.0",
-        "laravel/sanctum": "^4.0",
         "predis/predis": "^2.2",
         "ticketarget/logging": "@dev"
     },
@@ -20,7 +19,13 @@
         "phpunit/phpunit": "^11.0"
     },
     "repositories": [
-        { "type": "path", "url": "../../libs/logging", "options": { "symlink": false } }
+        {
+            "type": "path",
+            "url": "../../libs/logging",
+            "options": {
+                "symlink": false
+            }
+        }
     ],
     "autoload": {
         "psr-4": {
@@ -30,20 +35,34 @@
         }
     },
     "autoload-dev": {
-        "psr-4": { "Tests\\": "tests/" }
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
     },
     "scripts": {
-        "lint": ["pint --test", "phpstan analyse"],
-        "fix": ["pint"],
-        "test": ["phpunit"]
+        "lint": [
+            "pint --test",
+            "phpstan analyse"
+        ],
+        "fix": [
+            "pint"
+        ],
+        "test": [
+            "phpunit"
+        ]
     },
     "extra": {
-        "laravel": { "dont-discover": [] }
+        "laravel": {
+            "dont-discover": []
+        }
     },
     "config": {
         "optimize-autoloader": true,
         "sort-packages": true,
-        "allow-plugins": { "pestphp/pest-plugin": true, "php-http/discovery": true }
+        "allow-plugins": {
+            "pestphp/pest-plugin": true,
+            "php-http/discovery": true
+        }
     },
     "minimum-stability": "stable",
     "prefer-stable": true
