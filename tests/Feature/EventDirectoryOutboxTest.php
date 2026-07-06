@@ -12,10 +12,8 @@ use Tests\TestCase;
 
 final class EventDirectoryOutboxTest extends TestCase
 {
-    use CreatesIdentityTables;
+    use MintsAdminJwt;
     use RefreshDatabase;
-
-    private const string SECRET = 'test-auth-secret';
 
     protected function beforeRefreshingDatabase(): void
     {
@@ -28,9 +26,9 @@ final class EventDirectoryOutboxTest extends TestCase
     {
         parent::setUp();
 
-        config(['auth_token.secret' => self::SECRET, 'auth_token.issuer' => 'ticketarget-users']);
+        config(['auth_token.issuer' => 'ticketarget-users']);
 
-        $this->createIdentityTables();
+        $this->bindAdminJwks();
     }
 
     public function test_creating_an_event_enqueues_event_created(): void
@@ -130,20 +128,6 @@ final class EventDirectoryOutboxTest extends TestCase
      */
     private function adminHeaders(): array
     {
-        $encode = static fn (string $v): string => rtrim(strtr(base64_encode($v), '+/', '-_'), '=');
-
-        $header = $encode(json_encode(['alg' => 'HS256', 'typ' => 'JWT'], JSON_THROW_ON_ERROR));
-        $payload = $encode(json_encode([
-            'iss' => 'ticketarget-users',
-            'sub' => '11111111-2222-3333-4444-555555555555',
-            'email' => 'admin@example.com',
-            'name' => 'Admin',
-            'is_admin' => true,
-            'iat' => time(),
-            'exp' => time() + 3600,
-        ], JSON_THROW_ON_ERROR));
-        $signature = $encode(hash_hmac('sha256', $header.'.'.$payload, self::SECRET, true));
-
-        return ['Authorization' => 'Bearer '.$header.'.'.$payload.'.'.$signature];
+        return ['Authorization' => 'Bearer '.$this->adminJwt(isAdmin: true)];
     }
 }

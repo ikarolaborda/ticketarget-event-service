@@ -13,7 +13,15 @@ use Tests\TestCase;
 
 final class VenueZoneTest extends TestCase
 {
+    use MintsAdminJwt;
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->bindAdminJwks();
+    }
 
     public function test_it_requires_admin_for_zone_writes_and_keeps_reads_public(): void
     {
@@ -266,20 +274,6 @@ final class VenueZoneTest extends TestCase
      */
     private function adminHeaders(): array
     {
-        $encode = static fn (string $v): string => rtrim(strtr(base64_encode($v), '+/', '-_'), '=');
-
-        $header = $encode(json_encode(['alg' => 'HS256', 'typ' => 'JWT']));
-        $payload = $encode(json_encode([
-            'iss' => 'ticketarget-users',
-            'sub' => '11111111-2222-3333-4444-555555555555',
-            'email' => 'admin@example.com',
-            'name' => 'Admin',
-            'is_admin' => true,
-            'iat' => time(),
-            'exp' => time() + 3600,
-        ]));
-        $signature = $encode(hash_hmac('sha256', $header.'.'.$payload, (string) config('auth_token.secret'), true));
-
-        return ['Authorization' => 'Bearer '.$header.'.'.$payload.'.'.$signature];
+        return ['Authorization' => 'Bearer '.$this->adminJwt(isAdmin: true)];
     }
 }
